@@ -5,7 +5,6 @@ import (
 
 	"github.com/mgwinsor/hodl/internal/domain/money"
 	"github.com/shopspring/decimal"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,27 +19,27 @@ func TestGrossProceeds(t *testing.T) {
 		{
 			name:         "standard case",
 			quantity:     decimal.NewFromInt(2),
-			pricePerUnit: decimal.NewFromFloat(80000.00),
-			expected:     decimal.NewFromFloat(160000.00),
+			pricePerUnit: decimal.NewFromFloat(testPrice),
+			expected:     decimal.NewFromFloat(200000.00),
 			expectError:  false,
 		},
 		{
 			name:         "zero quantity returns error",
 			quantity:     decimal.Zero,
-			pricePerUnit: decimal.NewFromFloat(80000.00),
+			pricePerUnit: decimal.NewFromFloat(testPrice),
 			expectError:  true,
 		},
 		{
 			name:         "fractional quantities",
-			quantity:     decimal.NewFromFloat(0.001),
-			pricePerUnit: decimal.NewFromFloat(80000.00),
-			expected:     decimal.NewFromFloat(80.00),
+			quantity:     decimal.NewFromFloat(testOneSatoshi),
+			pricePerUnit: decimal.NewFromFloat(testPrice),
+			expected:     decimal.NewFromFloat(0.001),
 			expectError:  false,
 		},
 		{
 			name:         "negative quantity",
 			quantity:     decimal.NewFromInt(-2),
-			pricePerUnit: decimal.NewFromFloat(80000.00),
+			pricePerUnit: decimal.NewFromFloat(testPrice),
 			expectError:  true,
 		},
 	}
@@ -52,10 +51,10 @@ func TestGrossProceeds(t *testing.T) {
 			}
 			grossProceeds, err := sell.GrossProceeds()
 			if tt.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			require.True(t, grossProceeds.Amount.Equal(tt.expected), "expected %s, got %s", tt.expected, grossProceeds.Amount)
 		})
 	}
@@ -73,32 +72,47 @@ func TestNetProceeds(t *testing.T) {
 		{
 			name:         "standard case",
 			quantity:     decimal.NewFromInt(2),
-			pricePerUnit: decimal.NewFromFloat(80000.00),
-			fee:          decimal.NewFromFloat(2.50),
-			expected:     decimal.NewFromFloat(159997.5),
+			pricePerUnit: decimal.NewFromFloat(testPrice),
+			fee:          decimal.NewFromFloat(testFee),
+			expected:     decimal.NewFromFloat(199997.5),
 			expectError:  false,
 		},
 		{
 			name:         "zero quantity returns error",
 			quantity:     decimal.Zero,
-			pricePerUnit: decimal.NewFromFloat(80000.00),
-			fee:          decimal.NewFromFloat(2.50),
+			pricePerUnit: decimal.NewFromFloat(testPrice),
+			fee:          decimal.NewFromFloat(testFee),
+			expectError:  true,
+		},
+		{
+			name:         "negative quantity returns error",
+			quantity:     decimal.NewFromInt(-2),
+			pricePerUnit: decimal.NewFromFloat(testPrice),
+			fee:          decimal.NewFromFloat(testFee),
 			expectError:  true,
 		},
 		{
 			name:         "zero fee",
 			quantity:     decimal.NewFromInt(1),
-			pricePerUnit: decimal.NewFromFloat(80000.00),
+			pricePerUnit: decimal.NewFromFloat(testPrice),
 			fee:          decimal.Zero,
-			expected:     decimal.NewFromFloat(80000.00),
+			expected:     decimal.NewFromFloat(testPrice),
 			expectError:  false,
 		},
 		{
 			name:         "fractional quantities",
-			quantity:     decimal.NewFromFloat(0.001),
-			pricePerUnit: decimal.NewFromFloat(80000.00),
-			fee:          decimal.NewFromFloat(0.99),
-			expected:     decimal.NewFromFloat(79.01),
+			quantity:     decimal.NewFromFloat(testOneSatoshi),
+			pricePerUnit: decimal.NewFromFloat(testPrice),
+			fee:          decimal.NewFromFloat(0.00001),
+			expected:     decimal.NewFromFloat(0.00099),
+			expectError:  false,
+		},
+		{
+			name:         "fee exceeds gross proceeds results in negative net",
+			quantity:     decimal.NewFromInt(1),
+			pricePerUnit: decimal.NewFromFloat(100.00),
+			fee:          decimal.NewFromFloat(150.00),
+			expected:     decimal.NewFromFloat(-50.00),
 			expectError:  false,
 		},
 	}
@@ -111,10 +125,10 @@ func TestNetProceeds(t *testing.T) {
 			}
 			netProceeds, err := sell.NetProceeds()
 			if tt.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			require.True(t, netProceeds.Amount.Equal(tt.expected), "expected %s, got %s", tt.expected, netProceeds.Amount)
 		})
 	}
