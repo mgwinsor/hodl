@@ -37,6 +37,12 @@ func TestGrossProceeds(t *testing.T) {
 			expected:     decimal.NewFromFloat(80.00),
 			expectError:  false,
 		},
+		{
+			name:         "negative quantity",
+			quantity:     decimal.NewFromInt(-2),
+			pricePerUnit: decimal.NewFromFloat(80000.00),
+			expectError:  true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

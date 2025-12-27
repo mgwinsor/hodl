@@ -51,6 +51,13 @@ func TestCostBasis(t *testing.T) {
 			expected:     decimal.NewFromFloat(80.99),
 			expectError:  false,
 		},
+		{
+			name:         "negative quantities",
+			quantity:     decimal.NewFromInt(-2),
+			pricePerUnit: decimal.NewFromFloat(80000.00),
+			fee:          decimal.NewFromFloat(2.50),
+			expectError:  true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

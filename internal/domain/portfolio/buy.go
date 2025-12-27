@@ -26,6 +26,11 @@ func (b Buy) CostBasis() (money.USD, error) {
 			"cannot calculate cost basis for zero quantity",
 		)
 	}
+	if b.Quantity.IsNegative() {
+		return money.USD{}, errors.New(
+			"cannot calculate cost basis for negative quantity",
+		)
+	}
 	costBasis := b.Quantity.Mul(b.PricePerUnit.Amount).Add(b.Fee.Amount)
 	return money.NewUSD(costBasis), nil
 }

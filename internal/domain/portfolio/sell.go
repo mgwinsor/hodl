@@ -26,6 +26,11 @@ func (s Sell) GrossProceeds() (money.USD, error) {
 			"cannot calculate proceeds for zero quantity",
 		)
 	}
+	if s.Quantity.IsNegative() {
+		return money.USD{}, errors.New(
+			"cannot calculate proceeds for negative quantity",
+		)
+	}
 	grossProceeds := s.Quantity.Mul(s.PricePerUnit.Amount)
 	return money.NewUSD(grossProceeds), nil
 }
