@@ -18,7 +18,6 @@ func TestCostBasis(t *testing.T) {
 		pricePerUnit decimal.Decimal
 		fee          decimal.Decimal
 		expected     decimal.Decimal
-		expectError  bool
 	}{
 		{
 			name:         "standard case",
@@ -26,14 +25,6 @@ func TestCostBasis(t *testing.T) {
 			pricePerUnit: decimal.NewFromFloat(testPrice),
 			fee:          decimal.NewFromFloat(testFee),
 			expected:     decimal.NewFromFloat(200002.50),
-			expectError:  false,
-		},
-		{
-			name:         "zero quantity returns error",
-			quantity:     decimal.Zero,
-			pricePerUnit: decimal.NewFromFloat(testPrice),
-			fee:          decimal.NewFromFloat(testFee),
-			expectError:  true,
 		},
 		{
 			name:         "zero fee",
@@ -41,7 +32,6 @@ func TestCostBasis(t *testing.T) {
 			pricePerUnit: decimal.NewFromFloat(testPrice),
 			fee:          decimal.Zero,
 			expected:     decimal.NewFromFloat(testPrice),
-			expectError:  false,
 		},
 		{
 			name:         "fractional quantities",
@@ -49,29 +39,19 @@ func TestCostBasis(t *testing.T) {
 			pricePerUnit: decimal.NewFromFloat(testPrice),
 			fee:          decimal.NewFromFloat(testFee),
 			expected:     decimal.NewFromFloat(testFee + 0.001),
-			expectError:  false,
-		},
-		{
-			name:         "negative quantities",
-			quantity:     decimal.NewFromInt(-2),
-			pricePerUnit: decimal.NewFromFloat(testPrice),
-			fee:          decimal.NewFromFloat(testFee),
-			expectError:  true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			qty, err := NewQuantity(tt.quantity)
+			require.NoError(t, err)
+
 			buy := Buy{
-				Quantity:     tt.quantity,
+				Quantity:     qty,
 				PricePerUnit: money.NewUSD(tt.pricePerUnit),
 				Fee:          money.NewUSD(tt.fee),
 			}
-			costBasis, err := buy.CostBasis()
-			if tt.expectError {
-				require.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
+			costBasis := buy.CostBasis()
 			require.True(t, costBasis.Amount.Equal(tt.expected), "expected %s, got %s", tt.expected, costBasis.Amount)
 		})
 	}
@@ -84,7 +64,6 @@ func TestCostBasisPerUnit(t *testing.T) {
 		pricePerUnit decimal.Decimal
 		fee          decimal.Decimal
 		expected     decimal.Decimal
-		expectError  bool
 	}{
 		{
 			name:         "standard case",
@@ -92,21 +71,6 @@ func TestCostBasisPerUnit(t *testing.T) {
 			pricePerUnit: decimal.NewFromFloat(testPrice),
 			fee:          decimal.NewFromFloat(testFee),
 			expected:     decimal.NewFromFloat(100001.25),
-			expectError:  false,
-		},
-		{
-			name:         "zero quantity returns error",
-			quantity:     decimal.Zero,
-			pricePerUnit: decimal.NewFromFloat(testPrice),
-			fee:          decimal.NewFromFloat(testFee),
-			expectError:  true,
-		},
-		{
-			name:         "negative quantity returns error",
-			quantity:     decimal.NewFromInt(-2),
-			pricePerUnit: decimal.NewFromFloat(testPrice),
-			fee:          decimal.NewFromFloat(testFee),
-			expectError:  true,
 		},
 		{
 			name:         "fractional quantities",
@@ -114,22 +78,19 @@ func TestCostBasisPerUnit(t *testing.T) {
 			pricePerUnit: decimal.NewFromFloat(testPrice),
 			fee:          decimal.NewFromFloat(testOneSatoshi),
 			expected:     decimal.NewFromFloat(100001.00),
-			expectError:  false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			qty, err := NewQuantity(tt.quantity)
+			require.NoError(t, err)
+
 			buy := Buy{
-				Quantity:     tt.quantity,
+				Quantity:     qty,
 				PricePerUnit: money.NewUSD(tt.pricePerUnit),
 				Fee:          money.NewUSD(tt.fee),
 			}
-			costBasisPerUnit, err := buy.CostBasisPerUnit()
-			if tt.expectError {
-				require.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
+			costBasisPerUnit := buy.CostBasisPerUnit()
 			require.True(t, costBasisPerUnit.Amount.Equal(tt.expected), "expected %s, got %s", tt.expected, costBasisPerUnit.Amount)
 		})
 	}
@@ -139,24 +100,20 @@ func TestCreateTaxLot(t *testing.T) {
 	fixedTime := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
 
 	tests := []struct {
-		name        string
-		quantity    decimal.Decimal
-		expectError bool
+		name     string
+		quantity decimal.Decimal
 	}{
 		{
-			name:        "creates tax lot from valid buy",
-			quantity:    decimal.NewFromFloat(0.5),
-			expectError: false,
+			name:     "creates tax lot from valid buy",
+			quantity: decimal.NewFromFloat(0.5),
 		},
 		{
-			name:        "zero quantity returns error",
-			quantity:    decimal.Zero,
-			expectError: true,
+			name:     "fractional quantity",
+			quantity: decimal.NewFromFloat(testOneSatoshi),
 		},
 		{
-			name:        "negative quantity returns error",
-			quantity:    decimal.NewFromInt(-1),
-			expectError: true,
+			name:     "large quantity",
+			quantity: decimal.NewFromInt(1000000),
 		},
 	}
 
@@ -167,26 +124,22 @@ func TestCreateTaxLot(t *testing.T) {
 			pricePerUnit := decimal.NewFromFloat(testPrice)
 			fee := decimal.NewFromFloat(testFee)
 
+			qty, err := NewQuantity(tt.quantity)
+			require.NoError(t, err)
+
 			buy := Buy{
 				ID:           buyID,
 				WalletID:     walletID,
 				Hash:         "tx_hash_123",
 				Timestamp:    fixedTime,
 				Asset:        "BTC",
-				Quantity:     tt.quantity,
+				Quantity:     qty,
 				PricePerUnit: money.NewUSD(pricePerUnit),
 				Fee:          money.NewUSD(fee),
 			}
 
-			taxLot, err := buy.CreateTaxLot()
+			taxLot := buy.CreateTaxLot()
 
-			if tt.expectError {
-				require.Error(t, err)
-				require.Equal(t, TaxLot{}, taxLot)
-				return
-			}
-
-			require.NoError(t, err)
 			assert.NotEqual(t, uuid.Nil, taxLot.ID)
 			assert.NotEqual(t, buyID, taxLot.ID)
 			assert.Equal(t, walletID, taxLot.WalletID)
@@ -194,8 +147,7 @@ func TestCreateTaxLot(t *testing.T) {
 			assert.Equal(t, fixedTime, taxLot.AcquisitionDate)
 			assert.True(t, tt.quantity.Equal(taxLot.OriginalQuantity))
 			assert.True(t, tt.quantity.Equal(taxLot.RemainingQuantity))
-			expectedCostBasis, err := buy.CostBasis()
-			require.NoError(t, err)
+			expectedCostBasis := buy.CostBasis()
 			assert.True(t, expectedCostBasis.Amount.Equal(taxLot.OriginalCostBasis.Amount))
 			assert.Equal(t, buy, taxLot.Source)
 		})

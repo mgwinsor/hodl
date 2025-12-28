@@ -17,6 +17,9 @@ func TestFeeAsSell(t *testing.T) {
 	fromWalletID := uuid.New()
 	toWalletID := uuid.New()
 
+	transferQty, err := NewQuantity(decimal.NewFromFloat(1.5))
+	require.NoError(t, err)
+
 	tests := []struct {
 		name                 string
 		feeQuantity          decimal.Decimal
@@ -94,7 +97,7 @@ func TestFeeAsSell(t *testing.T) {
 				Hash:         "tx_hash_transfer_123",
 				Timestamp:    fixedTime,
 				Asset:        "BTC",
-				Quantity:     decimal.NewFromFloat(1.5),
+				Quantity:     transferQty,
 				FromWalletID: fromWalletID,
 				ToWalletID:   toWalletID,
 				FeeQuantity:  tt.feeQuantity,
@@ -117,7 +120,7 @@ func TestFeeAsSell(t *testing.T) {
 			assert.Equal(t, "tx_hash_transfer_123", sell.Hash)
 			assert.Equal(t, fixedTime, sell.Timestamp)
 			assert.Equal(t, "ETH", sell.Asset)
-			assert.True(t, tt.feeQuantity.Equal(sell.Quantity), "expected quantity %s, got %s", tt.feeQuantity, sell.Quantity)
+			assert.True(t, tt.feeQuantity.Equal(sell.Quantity.Value()), "expected quantity %s, got %s", tt.feeQuantity, sell.Quantity.Value())
 			assert.True(t, tt.expectedPricePerUnit.Equal(sell.PricePerUnit.Amount), "expected price per unit %s, got %s", tt.expectedPricePerUnit, sell.PricePerUnit.Amount)
 			assert.True(t, decimal.Zero.Equal(sell.Fee.Amount), "expected zero fee, got %s", sell.Fee.Amount)
 		})

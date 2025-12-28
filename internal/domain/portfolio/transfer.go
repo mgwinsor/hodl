@@ -14,7 +14,7 @@ type Transfer struct {
 	Hash         string
 	Timestamp    time.Time
 	Asset        string
-	Quantity     decimal.Decimal
+	Quantity     Quantity
 	FromWalletID uuid.UUID
 	ToWalletID   uuid.UUID
 	FeeQuantity  decimal.Decimal
@@ -23,14 +23,10 @@ type Transfer struct {
 }
 
 func (t Transfer) FeeAsSell() (Sell, error) {
-	if t.FeeQuantity.IsZero() {
+	feeQty, err := NewQuantity(t.FeeQuantity)
+	if err != nil {
 		return Sell{}, errors.New(
-			"cannot create sell for zero fee quantity",
-		)
-	}
-	if t.FeeQuantity.IsNegative() {
-		return Sell{}, errors.New(
-			"cannot create sell for negative fee quantity",
+			"cannot create sell for invalid fee quantity: " + err.Error(),
 		)
 	}
 	pricePerUnit := t.FeeUSD.Amount.Div(t.FeeQuantity)
@@ -40,7 +36,7 @@ func (t Transfer) FeeAsSell() (Sell, error) {
 		Hash:         t.Hash,
 		Timestamp:    t.Timestamp,
 		Asset:        t.FeeAsset,
-		Quantity:     t.FeeQuantity,
+		Quantity:     feeQty,
 		PricePerUnit: money.NewUSD(pricePerUnit),
 		Fee:          money.NewUSD(decimal.Zero),
 	}, nil

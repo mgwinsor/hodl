@@ -9,7 +9,7 @@ import (
 )
 
 type TaxLotSource interface {
-	CostBasisPerUnit() (money.USD, error)
+	CostBasisPerUnit() money.USD
 }
 
 type TaxLot struct {

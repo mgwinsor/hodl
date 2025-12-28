@@ -1,12 +1,10 @@
 package portfolio
 
 import (
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/mgwinsor/hodl/internal/domain/money"
-	"github.com/shopspring/decimal"
 )
 
 type Sell struct {
@@ -15,31 +13,18 @@ type Sell struct {
 	Hash         string
 	Timestamp    time.Time
 	Asset        string
-	Quantity     decimal.Decimal
+	Quantity     Quantity
 	PricePerUnit money.USD
 	Fee          money.USD
 }
 
-func (s Sell) GrossProceeds() (money.USD, error) {
-	if s.Quantity.IsZero() {
-		return money.USD{}, errors.New(
-			"cannot calculate proceeds for zero quantity",
-		)
-	}
-	if s.Quantity.IsNegative() {
-		return money.USD{}, errors.New(
-			"cannot calculate proceeds for negative quantity",
-		)
-	}
-	grossProceeds := s.Quantity.Mul(s.PricePerUnit.Amount)
-	return money.NewUSD(grossProceeds), nil
+func (s Sell) GrossProceeds() money.USD {
+	grossProceeds := s.Quantity.Value().Mul(s.PricePerUnit.Amount)
+	return money.NewUSD(grossProceeds)
 }
 
-func (s Sell) NetProceeds() (money.USD, error) {
-	gross, err := s.GrossProceeds()
-	if err != nil {
-		return money.USD{}, err
-	}
+func (s Sell) NetProceeds() money.USD {
+	gross := s.GrossProceeds()
 	net := gross.Amount.Sub(s.Fee.Amount)
-	return money.NewUSD(net), nil
+	return money.NewUSD(net)
 }
