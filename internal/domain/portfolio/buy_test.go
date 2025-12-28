@@ -197,7 +197,7 @@ func TestCreateTaxLot(t *testing.T) {
 			expectedCostBasis, err := buy.CostBasis()
 			require.NoError(t, err)
 			assert.True(t, expectedCostBasis.Amount.Equal(taxLot.OriginalCostBasis.Amount))
-			assert.Equal(t, buy, taxLot.SourceBuy)
+			assert.Equal(t, buy, taxLot.Source)
 		})
 	}
 }

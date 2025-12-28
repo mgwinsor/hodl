@@ -58,6 +58,6 @@ func (b Buy) CreateTaxLot() (TaxLot, error) {
 		OriginalQuantity:  b.Quantity,
 		RemainingQuantity: b.Quantity,
 		OriginalCostBasis: costBasis,
-		SourceBuy:         b,
+		Source:            b,
 	}, nil
 }

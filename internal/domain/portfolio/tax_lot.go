@@ -8,6 +8,10 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+type TaxLotSource interface {
+	CostBasisPerUnit() (money.USD, error)
+}
+
 type TaxLot struct {
 	ID                uuid.UUID
 	WalletID          uuid.UUID
@@ -16,7 +20,7 @@ type TaxLot struct {
 	OriginalQuantity  decimal.Decimal
 	RemainingQuantity decimal.Decimal
 	OriginalCostBasis money.USD
-	SourceBuy         Buy
+	Source            TaxLotSource
 }
 
 func (lot TaxLot) IsFullyConsumed() bool {
